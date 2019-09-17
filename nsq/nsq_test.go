@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jarlyyn/herb-go-experimental/messagequeue"
+	"github.com/herb-go/messagequeue"
 )
 
 func newTestBroker() *messagequeue.Broker {

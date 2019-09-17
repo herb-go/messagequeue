@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/jarlyyn/herb-go-experimental/messagequeue"
+	"github.com/herb-go/messagequeue"
 	nsq "github.com/nsqio/go-nsq"
 )
 
