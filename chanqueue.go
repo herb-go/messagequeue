@@ -1,8 +1,38 @@
 package messagequeue
 
+import (
+	"sync"
+)
+
+var chans = map[string]chan *Message{}
+
+var chansLock = sync.Mutex{}
+
+func getChanByName(name string) chan *Message {
+	chansLock.Lock()
+	defer chansLock.Unlock()
+	c, ok := chans[name]
+	if ok == false {
+		c = make(chan *Message)
+		chans[name] = c
+		return c
+	}
+	return c
+}
+
+func closeChanByName(name string) {
+	chansLock.Lock()
+	defer chansLock.Unlock()
+	c, ok := chans[name]
+	if ok == false {
+		return
+	}
+	close(c)
+}
+
 //ChanQueue chan queue driver
 type ChanQueue struct {
-	queue    chan *Message
+	name     string
 	c        chan int
 	consumer func(*Message) ConsumerStatus
 	recover  func()
@@ -16,14 +46,15 @@ func (q *ChanQueue) SetRecover(r func()) {
 // Start start queue
 //Return any error if raised
 func (q *ChanQueue) Start() error {
-	q.queue = make(chan *Message)
+	var queue = getChanByName(q.name)
 	q.c = make(chan int)
 	go func() {
 		for {
 			select {
-			case m := <-q.queue:
+			case m := <-queue:
 				go q.consumer(m)
 			case <-q.c:
+				closeChanByName(q.name)
 				return
 			}
 		}
@@ -41,9 +72,10 @@ func (q *ChanQueue) Close() error {
 // ProduceMessages produce messages to broke
 //Return sent result and any error if raised
 func (q *ChanQueue) ProduceMessages(messages ...[]byte) (sent []bool, err error) {
+	var queue = getChanByName(q.name)
 	sent = make([]bool, len(messages))
 	for k := range messages {
-		q.queue <- NewMessage(messages[k])
+		queue <- NewMessage(messages[k])
 		sent[k] = true
 	}
 	return sent, nil
