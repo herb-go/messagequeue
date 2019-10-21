@@ -27,6 +27,7 @@ func closeChanByName(name string) {
 	if ok == false {
 		return
 	}
+	delete(chans, name)
 	close(c)
 }
 
@@ -94,7 +95,12 @@ func NewChanQueue() *ChanQueue {
 //ChanQueueFactory chan queue factory
 //Create driver with given config and prefix
 func ChanQueueFactory(conf Config, prefix string) (Driver, error) {
-	return NewChanQueue(), nil
+	c := NewChanQueue()
+	err := conf.Get(prefix+"Name", &c.name)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 func init() {
