@@ -35,7 +35,6 @@ func closeChanByName(name string) {
 type ChanQueue struct {
 	name     string
 	c        chan int
-	pc       chan int
 	consumer func(*Message) ConsumerStatus
 	recover  func()
 }
@@ -47,24 +46,11 @@ func (q *ChanQueue) SetRecover(r func()) {
 
 //Connect to brocker as producer
 func (q *ChanQueue) Connect() error {
-	var queue = getChanByName(q.name)
-	q.pc = make(chan int)
-	go func() {
-		for {
-			select {
-			case m := <-queue:
-				go q.consumer(m)
-			case <-q.pc:
-				return
-			}
-		}
-	}()
 	return nil
 }
 
 //Disconnect stop producing and disconnect
 func (q *ChanQueue) Disconnect() error {
-	close(q.pc)
 	return nil
 }
 
