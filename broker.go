@@ -43,11 +43,45 @@ func NewChanConsumer(c chan *Message) func(*Message) ConsumerStatus {
 	}
 }
 
+//Producer producer interface
+type Producer interface {
+	// ProduceMessages produce messages to broke
+	//Return sent result and any error if raised
+	ProduceMessages(...[]byte) (sent []bool, err error)
+	//SendBytes send bytes to brokcer.
+	//Return any error if raised
+	SendBytes(bs []byte) error
+	//Connect to brocker as producer
+	Connect() error
+	//Disconnect stop producing and disconnect
+	Disconnect() error
+}
+
+//Consumer Consumer interface
+type Consumer interface {
+	//SetRecover set recover
+	SetRecover(func())
+	//SetConsumer set message consumer
+	SetConsumer(func(*Message) ConsumerStatus)
+	// Listen listen queue
+	//Return any error if raised
+	Listen() error
+	//Close close queue
+	//Return any error if raised
+	Close() error
+}
+
 //Driver message queue driver interface
 type Driver interface {
-	// Start start queue
+	// ProduceMessages produce messages to broke
+	//Return sent result and any error if raised
+	Connect() error
+	//SendBytes send bytes to brokcer.
 	//Return any error if raised
-	Start() error
+	Disconnect() error
+	// Listen listen queue
+	//Return any error if raised
+	Listen() error
 	//Close close queue
 	//Return any error if raised
 	Close() error
@@ -60,7 +94,7 @@ type Driver interface {
 	SetConsumer(func(*Message) ConsumerStatus)
 }
 
-// Factory unique id generator driver create factory.
+// Factory message queue generator driver create factory.
 type Factory func(conf Config, prefix string) (Driver, error)
 
 var (

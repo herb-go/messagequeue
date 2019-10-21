@@ -163,12 +163,26 @@ func (q *Queue) Hanlder(message *nsq.Message) error {
 	)
 	return nil
 }
-func (q *Queue) Start() error {
+
+//Connect to brocker as producer
+func (q *Queue) Connect() error {
 	var err error
 	q.Producer, err = nsq.NewProducer(q.Addr, q.Config)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+//Disconnect stop producing and disconnect
+func (q *Queue) Disconnect() error {
+	q.Producer.Stop()
+	return nil
+}
+
+func (q *Queue) Listen() error {
+	var err error
+
 	q.Consumer, err = nsq.NewConsumer(q.Topic, q.Chanel, q.Config)
 	if err != nil {
 		return err
@@ -186,7 +200,6 @@ func (q *Queue) Start() error {
 
 }
 func (q *Queue) Close() error {
-	q.Producer.Stop()
 	q.Consumer.Stop()
 	return nil
 }

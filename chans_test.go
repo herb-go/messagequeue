@@ -28,7 +28,7 @@ func TestChans(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = c.Start()
+	err = c.Listen()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestChans(t *testing.T) {
 	if len(chans) != 1 {
 		t.Fatal(chans)
 	}
-	err = c2.Start()
+	err = c2.Listen()
 	if err != nil {
 		t.Fatal(err)
 	}
