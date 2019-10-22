@@ -8,6 +8,7 @@ import (
 	nsq "github.com/nsqio/go-nsq"
 )
 
+//Config nsq config
 type Config struct {
 	Addr                            string
 	Topic                           string
@@ -42,6 +43,7 @@ type Config struct {
 	AuthSecret                      string
 }
 
+//ApplyTo apply config to queue
 func (c *Config) ApplyTo(q *Queue) error {
 	q.Addr = c.Addr
 	q.Topic = c.Topic
@@ -134,10 +136,13 @@ func (c *Config) ApplyTo(q *Queue) error {
 	}
 	return nil
 }
+
+//NewConfig create new config
 func NewConfig() *Config {
 	return &Config{}
 }
 
+// Queue nsq queue struct
 type Queue struct {
 	Addr       string
 	Topic      string
@@ -150,10 +155,12 @@ type Queue struct {
 	recover    func()
 }
 
+//SetRecover set recover
 func (q *Queue) SetRecover(r func()) {
 	q.recover = r
 }
-func (q *Queue) Hanlder(message *nsq.Message) error {
+
+func (q *Queue) hanlder(message *nsq.Message) error {
 	id := [nsq.MsgIDLength]byte(message.ID)
 	q.consumer(
 		messagequeue.NewMessage(message.Body).
@@ -180,6 +187,8 @@ func (q *Queue) Disconnect() error {
 	return nil
 }
 
+// Listen listen queue
+//Return any error if raised
 func (q *Queue) Listen() error {
 	var err error
 
@@ -187,7 +196,7 @@ func (q *Queue) Listen() error {
 	if err != nil {
 		return err
 	}
-	q.Consumer.AddHandler(nsq.HandlerFunc(q.Hanlder))
+	q.Consumer.AddHandler(nsq.HandlerFunc(q.hanlder))
 	if q.LookupAddr != "" {
 		err = q.Consumer.ConnectToNSQLookupd(q.LookupAddr)
 	} else {
@@ -199,10 +208,16 @@ func (q *Queue) Listen() error {
 	return nil
 
 }
+
+//Close close queue
+//Return any error if raised
 func (q *Queue) Close() error {
 	q.Consumer.Stop()
 	return nil
 }
+
+// ProduceMessages produce messages to broke
+//Return sent result and any error if raised
 func (q *Queue) ProduceMessages(messages ...[]byte) (sent []bool, err error) {
 	sent = make([]bool, len(messages))
 	for k := range messages {
@@ -214,10 +229,13 @@ func (q *Queue) ProduceMessages(messages ...[]byte) (sent []bool, err error) {
 	}
 	return sent, nil
 }
+
+//SetConsumer set message consumer
 func (q *Queue) SetConsumer(c func(*messagequeue.Message) messagequeue.ConsumerStatus) {
 	q.consumer = c
 }
 
+//NewQueue create new nsq queue.
 func NewQueue() *Queue {
 	return &Queue{
 		recover: func() {},
@@ -225,6 +243,7 @@ func NewQueue() *Queue {
 	}
 }
 
+// QueueFactory  queue factory
 func QueueFactory(conf messagequeue.Config, prefix string) (messagequeue.Driver, error) {
 	c := NewConfig()
 	var err error
