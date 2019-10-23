@@ -19,34 +19,36 @@ func testrecover() {
 }
 func TestBroker(t *testing.T) {
 	b := newTestBroker()
-	err := b.Listen()
+	producer := Producer(b)
+	consumer := Consumer(b)
+	err := consumer.Listen()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = b.Connect()
+	err = producer.Connect()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
-		err := b.Close()
+		err := consumer.Close()
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = b.Disconnect()
+		err = producer.Disconnect()
 		if err != nil {
 			t.Fatal(err)
 		}
 	}()
-	b.SetRecover(testrecover)
+	consumer.SetRecover(testrecover)
 	testchan := make(chan *Message, 100)
-	b.SetConsumer(NewChanConsumer(testchan))
+	consumer.SetConsumer(NewChanConsumer(testchan))
 	messages := [][]byte{}
 	unreceived := list.New()
 	for i := byte(0); i < 5; i++ {
 		messages = append(messages, []byte{i})
 		unreceived.PushBack([]byte{i})
 	}
-	sent, err := b.ProduceMessages(messages...)
+	sent, err := producer.ProduceMessages(messages...)
 	if err != nil {
 		t.Fatal(err)
 	}
