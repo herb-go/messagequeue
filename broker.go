@@ -73,10 +73,10 @@ type Consumer interface {
 
 //Driver message queue driver interface
 type Driver interface {
-	// ProduceMessages produce messages to broke
-	//Return sent result and any error if raised
+	//Connect to brocker as producer
+	//Return any error if raised
 	Connect() error
-	//SendBytes send bytes to brokcer.
+	//Disconnect stop producing and disconnect
 	//Return any error if raised
 	Disconnect() error
 	// Listen listen queue
