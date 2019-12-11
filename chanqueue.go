@@ -102,14 +102,20 @@ func NewChanQueue() *ChanQueue {
 	return &ChanQueue{}
 }
 
+type ChanQueueConfig struct {
+	Name string
+}
+
 //ChanQueueFactory chan queue factory
-//Create driver with given config and prefix
-func ChanQueueFactory(conf Config, prefix string) (Driver, error) {
+//Create driver with given loader
+func ChanQueueFactory(loader func(interface{}) error) (Driver, error) {
 	c := NewChanQueue()
-	err := conf.Get(prefix+"Name", &c.name)
+	conf := &ChanQueueConfig{}
+	err := loader(conf)
 	if err != nil {
 		return nil, err
 	}
+	c.name = conf.Name
 	return c, nil
 }
 

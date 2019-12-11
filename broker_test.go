@@ -23,7 +23,7 @@ func TestUniqueID(t *testing.T) {
 }
 
 func TestNotexistedDriver(t *testing.T) {
-	d, err := NewDriver("notexist", nil, "")
+	d, err := NewDriver("notexist", nil)
 	if d != nil {
 		t.Fatal(d)
 	}

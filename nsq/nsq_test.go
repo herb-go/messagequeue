@@ -3,21 +3,24 @@ package nsq
 import (
 	"bytes"
 	"container/list"
-	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/herb-go/herbconfig/loader"
+	_ "github.com/herb-go/herbconfig/loader/drivers/jsonconfig"
 
 	"github.com/herb-go/messagequeue"
 )
 
 func newTestBroker() *messagequeue.Broker {
 	b := messagequeue.NewBroker()
-	c := messagequeue.NewOptionConfigMap()
-	err := json.Unmarshal([]byte(testConfig), c)
+	c := messagequeue.NewOptionConfig()
+	err := loader.LoadConfig("json", []byte(testConfig), c)
 	if err != nil {
 		panic(err)
 	}
 	err = c.ApplyTo(b)
+
 	if err != nil {
 		panic(err)
 	}
@@ -86,12 +89,13 @@ func TestBroker(t *testing.T) {
 
 func newLookupTestBroker() *messagequeue.Broker {
 	b := messagequeue.NewBroker()
-	c := messagequeue.NewOptionConfigMap()
-	err := json.Unmarshal([]byte(testLookupConfig), c)
+	c := messagequeue.NewOptionConfig()
+	err := loader.LoadConfig("json", []byte(testLookupConfig), c)
 	if err != nil {
 		panic(err)
 	}
 	err = c.ApplyTo(b)
+
 	if err != nil {
 		panic(err)
 	}

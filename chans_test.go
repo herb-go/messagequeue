@@ -1,6 +1,8 @@
 package messagequeue
 
 import (
+	"bytes"
+	"encoding/json"
 	"testing"
 	"time"
 )
@@ -11,11 +13,20 @@ func TestChans(t *testing.T) {
 	if len(chans) != 0 {
 		t.Fatal(chans)
 	}
-	conf := NewOptionConfigMap()
-	conf.Config.Set("Name", "name1")
+	conf := NewOptionConfig()
+	buf := bytes.NewBuffer(nil)
+	err = json.NewEncoder(buf).Encode(ChanQueueConfig{
+		Name: "name1",
+	})
+	conf.Config = json.NewDecoder(buf).Decode
 	conf.Driver = "chan"
-	conf2 := NewOptionConfigMap()
-	conf2.Config.Set("Name", "name2")
+	conf2 := NewOptionConfig()
+	buf2 := bytes.NewBuffer(nil)
+	err = json.NewEncoder(buf2).Encode(ChanQueueConfig{
+		Name: "name2",
+	})
+	conf.Config = json.NewDecoder(buf2).Decode
+
 	conf2.Driver = "chan"
 	c := NewBroker()
 	err = conf.ApplyTo(c)

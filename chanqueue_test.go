@@ -9,9 +9,12 @@ import (
 
 func newTestBroker() *Broker {
 	b := NewBroker()
-	c := NewOptionConfigMap()
+	c := NewOptionConfig()
 	c.Driver = "chan"
-	c.ApplyTo(b)
+	err := c.ApplyTo(b)
+	if err != nil {
+		panic(err)
+	}
 	return b
 }
 func testrecover() {
