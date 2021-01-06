@@ -21,13 +21,6 @@ type Broker struct {
 	Driver
 }
 
-//SendBytes send bytes to brokcer.
-//Return any error if raised
-func (b *Broker) SendBytes(bs []byte) error {
-	_, err := b.ProduceMessages(bs)
-	return err
-}
-
 //NewBroker create new message queue broker
 func NewBroker() *Broker {
 	return &Broker{}
@@ -45,12 +38,9 @@ func NewChanConsumer(c chan *Message) func(*Message) ConsumerStatus {
 
 //Producer producer interface
 type Producer interface {
-	// ProduceMessages produce messages to broke
+	// ProduceMessage produce message to broke
 	//Return sent result and any error if raised
-	ProduceMessages(...[]byte) (sent []bool, err error)
-	//SendBytes send bytes to brokcer.
-	//Return any error if raised
-	SendBytes(bs []byte) error
+	ProduceMessage([]byte) error
 	//Connect to brocker as producer
 	Connect() error
 	//Disconnect stop producing and disconnect
@@ -87,9 +77,9 @@ type Driver interface {
 	Close() error
 	//SetRecover set recover
 	SetRecover(func())
-	// ProduceMessages produce messages to broke
-	//Return sent result and any error if raised
-	ProduceMessages(...[]byte) (sent []bool, err error)
+	// ProduceMessage produce message to broke
+	//Return any error if raised
+	ProduceMessage([]byte) error
 	//SetConsumer set message consumer
 	SetConsumer(func(*Message) ConsumerStatus)
 }

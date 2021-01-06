@@ -45,22 +45,17 @@ func TestBroker(t *testing.T) {
 	consumer.SetRecover(testrecover)
 	testchan := make(chan *Message, 100)
 	consumer.SetConsumer(NewChanConsumer(testchan))
-	messages := [][]byte{}
 	unreceived := list.New()
 	for i := byte(0); i < 5; i++ {
-		messages = append(messages, []byte{i})
+		err = producer.ProduceMessage([]byte{i})
+		if err != nil {
+			t.Fatal(err)
+		}
 		unreceived.PushBack([]byte{i})
 	}
-	sent, err := producer.ProduceMessages(messages...)
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	time.Sleep(time.Second)
-	for k := range sent {
-		if sent[k] == false {
-			t.Fatal(k)
-		}
-	}
+
 	if len(testchan) != 5 {
 		t.Fatal(len(testchan))
 	}

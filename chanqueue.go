@@ -80,16 +80,12 @@ func (q *ChanQueue) Close() error {
 	return nil
 }
 
-// ProduceMessages produce messages to broke
-//Return sent result and any error if raised
-func (q *ChanQueue) ProduceMessages(messages ...[]byte) (sent []bool, err error) {
+// ProduceMessage produce messages to broke
+//Return any error if raised
+func (q *ChanQueue) ProduceMessage(message []byte) error {
 	var queue = getChanByName(q.name)
-	sent = make([]bool, len(messages))
-	for k := range messages {
-		queue <- NewMessage(messages[k])
-		sent[k] = true
-	}
-	return sent, nil
+	queue <- NewMessage(message)
+	return nil
 }
 
 //SetConsumer set message consumer
