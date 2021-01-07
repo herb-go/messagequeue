@@ -95,3 +95,30 @@ func (p *ChanPublisher) Publish(bs []byte) error {
 func (p *ChanPublisher) Close() error {
 	return nil
 }
+
+type ChanBrokerConfig struct {
+	TTLDuration string
+}
+
+//ChanBrokerFactory chan broker factory
+//Create driver with given loader
+func ChanBrokerFactory(loader func(interface{}) error) (Driver, error) {
+	c := NewChanBroker()
+	conf := &ChanBrokerConfig{}
+	err := loader(conf)
+	if err != nil {
+		return nil, err
+	}
+	if conf.TTLDuration != "" {
+		d, err := time.ParseDuration(conf.TTLDuration)
+		if err != nil {
+			return nil, err
+		}
+		c.SetTTL(d)
+	}
+	return c, nil
+}
+
+func init() {
+	Register("chan", ChanBrokerFactory)
+}

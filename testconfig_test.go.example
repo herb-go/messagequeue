@@ -1,0 +1,9 @@
+//please rename this file to testconfig_test.go
+package messagequeue_test
+
+var testConfig = `{
+    "Driver":"chan",
+    "Config":{
+            "TTLDuration":"24h"
+        }
+    }`

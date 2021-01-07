@@ -18,7 +18,7 @@ type TestContext struct {
 func NewTestContext() *TestContext {
 	return &TestContext{}
 }
-func TestBroker(d messagequeue.Driver, count int, topic string, ctx *TestContext, ttl time.Duration, opt *TestOpt) {
+func TestBroker(b *messagequeue.Broker, count int, topic string, ctx *TestContext, ttl time.Duration, opt *TestOpt) {
 	var err error
 	var locker sync.Mutex
 	var failed bool
@@ -28,7 +28,7 @@ func TestBroker(d messagequeue.Driver, count int, topic string, ctx *TestContext
 		ctx.Errors = append(ctx.Errors, err)
 	}
 
-	p, err := d.NewTopicPublisher(topic)
+	p, err := b.NewTopicPublisher(topic)
 	if err != nil {
 		panic(err)
 	}
@@ -55,7 +55,7 @@ func TestBroker(d messagequeue.Driver, count int, topic string, ctx *TestContext
 		}
 	}()
 	time.Sleep(200 * ttl)
-	us, err := d.SubscribeTopic(topic, h)
+	us, err := b.SubscribeTopic(topic, h)
 	if err != nil {
 		panic(err)
 	}
@@ -79,7 +79,7 @@ func TestBroker(d messagequeue.Driver, count int, topic string, ctx *TestContext
 	if err != nil {
 		panic(err)
 	}
-	err = d.Close()
+	err = b.Close()
 	if err != nil {
 		panic(err)
 	}
