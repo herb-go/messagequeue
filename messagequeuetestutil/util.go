@@ -1,12 +1,24 @@
-package messagequeue
+package messagequeuetestutil
 
 import (
 	"errors"
 	"sync"
 	"time"
+
+	"github.com/herb-go/messagequeue"
 )
 
-func testQueue(q Queue, ctx *testContext, ttl time.Duration) {
+type TestOpt struct {
+}
+type TestContext struct {
+	Errors []error
+	Msgs   [][]byte
+}
+
+func NewTestContext() *TestContext {
+	return &TestContext{}
+}
+func TestBroker(d messagequeue.Driver, count int, topic string, ctx *TestContext, ttl time.Duration, opt *TestOpt) {
 	var err error
 	var locker sync.Mutex
 	var failed bool
@@ -16,24 +28,24 @@ func testQueue(q Queue, ctx *testContext, ttl time.Duration) {
 		ctx.Errors = append(ctx.Errors, err)
 	}
 
-	p, err := q.NewPublisher()
+	p, err := d.NewTopicPublisher(topic)
 	if err != nil {
 		panic(err)
 	}
-	mh := func(m *Message) MessageStatus {
+	mh := func(m *messagequeue.Message) messagequeue.MessageStatus {
 		locker.Lock()
 		defer locker.Unlock()
 		if m.Data[0] == 1 && !failed {
 			failed = true
-			return MessageStatusFail
+			return messagequeue.MessageStatusFail
 		}
 		if m.Data[0] == 2 {
 			panic(errors.New("test error"))
 		}
 		ctx.Msgs = append(ctx.Msgs, m.Data)
-		return MessageStatusSuccess
+		return messagequeue.MessageStatusSuccess
 	}
-	h := NewMessageHandler().
+	h := messagequeue.NewMessageHandler().
 		WithHandler(mh).
 		WithErrorHandler(errhandler)
 	go func() {
@@ -43,12 +55,12 @@ func testQueue(q Queue, ctx *testContext, ttl time.Duration) {
 		}
 	}()
 	time.Sleep(200 * ttl)
-	us, err := q.Subscribe(h)
+	us, err := d.SubscribeTopic(topic, h)
 	if err != nil {
 		panic(err)
 	}
 
-	for i := 1; i < 5; i++ {
+	for i := 1; i < count; i++ {
 		data := []byte{byte(i)}
 		go func() {
 			err := p.Publish(data)
@@ -64,6 +76,10 @@ func testQueue(q Queue, ctx *testContext, ttl time.Duration) {
 		panic(err)
 	}
 	err = us.Unsubscribe()
+	if err != nil {
+		panic(err)
+	}
+	err = d.Close()
 	if err != nil {
 		panic(err)
 	}
