@@ -1,11 +1,11 @@
 package messagequeue
 
-type Unsubscriber interface {
+type Subscription interface {
 	Unsubscribe() error
 }
 
-type FuncUnsubscriber func() error
+type FuncSubscription func() error
 
-func (u FuncUnsubscriber) Unsubscribe() error {
+func (u FuncSubscription) Unsubscribe() error {
 	return u()
 }

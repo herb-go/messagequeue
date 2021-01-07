@@ -8,7 +8,7 @@ import (
 )
 
 type Driver interface {
-	SubscribeTopic(string, MessageHandler) (Unsubscriber, error)
+	SubscribeTopic(string, MessageHandler) (Subscription, error)
 	NewTopicPublisher(string) (Publisher, error)
 	Close() error
 }

@@ -1,6 +1,7 @@
 package messagequeue
 
 type Queue interface {
-	Subscribe(MessageHandler) (Unsubscriber, error)
-	NewPublisher() (Publisher, error)
+	PushChan() chan []byte
+	PopChan() chan []byte
+	ShouldClose()
 }

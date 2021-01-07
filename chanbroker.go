@@ -40,11 +40,11 @@ func (b *ChanBroker) NewTopicPublisher(topic string) (Publisher, error) {
 	}
 	return p, nil
 }
-func (b *ChanBroker) SubscribeTopic(topic string, h MessageHandler) (Unsubscriber, error) {
+func (b *ChanBroker) SubscribeTopic(topic string, h MessageHandler) (Subscription, error) {
 	b.locker.Lock()
 	defer b.locker.Unlock()
 	quitchan := make(chan int)
-	u := FuncUnsubscriber(func() error {
+	u := FuncSubscription(func() error {
 		close(quitchan)
 		return nil
 	})
