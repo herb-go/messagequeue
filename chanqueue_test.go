@@ -1,79 +1,47 @@
 package messagequeue
 
 import (
-	"bytes"
-	"container/list"
 	"testing"
 	"time"
 )
 
-func newTestBroker() *Broker {
-	b := NewBroker()
-	c := NewOptionConfig()
-	c.Driver = "chan"
-	err := c.ApplyTo(b)
-	if err != nil {
-		panic(err)
-	}
-	return b
+var ttl = 100 * time.Microsecond
+
+func newTestQueue() Queue {
+	q := NewChanQueue()
+	q.Name = "test"
+	q.TTL = time.Hour
+	return q
 }
-func testrecover() {
-
+func newTTLTestQueue() Queue {
+	q := NewChanQueue()
+	q.Name = "test"
+	q.TTL = ttl
+	return q
 }
-func TestBroker(t *testing.T) {
-	b := newTestBroker()
-	producer := Producer(b)
-	consumer := Consumer(b)
-	err := consumer.Listen()
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = producer.Connect()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		err := consumer.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = producer.Disconnect()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	consumer.SetRecover(testrecover)
-	testchan := make(chan *Message, 100)
-	consumer.SetConsumer(NewChanConsumer(testchan))
-	unreceived := list.New()
-	for i := byte(0); i < 5; i++ {
-		err = producer.ProduceMessage([]byte{i})
-		if err != nil {
-			t.Fatal(err)
-		}
-		unreceived.PushBack([]byte{i})
-	}
 
-	time.Sleep(time.Second)
+type testContext struct {
+	Errors []error
+	Msgs   [][]byte
+}
 
-	if len(testchan) != 5 {
-		t.Fatal(len(testchan))
+func newTestContext() *testContext {
+	return &testContext{}
+}
+
+func TestQueue(t *testing.T) {
+	q := newTestQueue()
+	ctx := newTestContext()
+	testQueue(q, ctx, ttl)
+	if len(ctx.Msgs) != 3 || len(ctx.Errors) != 1 {
+		t.Fatal(ctx.Msgs, ctx.Errors)
 	}
-	if unreceived.Len() != 5 {
-		t.Fatal(unreceived.Len())
-	}
-	for i := byte(0); i < 5; i++ {
-		m := <-testchan
-		e := unreceived.Front()
-		for e != nil {
-			if bytes.Compare(e.Value.([]byte), m.Data) == 0 {
-				unreceived.Remove(e)
-				break
-			}
-			e = e.Next()
-		}
-	}
-	if unreceived.Len() != 0 {
-		t.Fatal(unreceived)
+}
+func TestTTLQueue(t *testing.T) {
+	q := newTTLTestQueue()
+	ctx := newTestContext()
+	testQueue(q, ctx, ttl)
+	if len(ctx.Msgs) != 2 || len(ctx.Errors) != 1 {
+		t.Fatal(ctx.Msgs, ctx.Errors)
 	}
 }

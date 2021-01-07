@@ -2,119 +2,77 @@ package messagequeue
 
 import (
 	"sync"
+	"time"
 )
 
-var chans = map[string]chan *Message{}
+type ChanBroker struct {
+	locker sync.Mutex
+	topics map[string]chan ([]byte)
+}
 
-var chansLock = sync.Mutex{}
-
-func getChanByName(name string) chan *Message {
-	chansLock.Lock()
-	defer chansLock.Unlock()
-	c, ok := chans[name]
-	if ok == false {
-		c = make(chan *Message)
-		chans[name] = c
-		return c
+func (b *ChanBroker) getChanByName(name string) chan ([]byte) {
+	b.locker.Lock()
+	defer b.locker.Unlock()
+	c, ok := b.topics[name]
+	if !ok {
+		c = make(chan ([]byte))
+		b.topics[name] = c
 	}
 	return c
 }
 
-func closeChanByName(name string) {
-	chansLock.Lock()
-	defer chansLock.Unlock()
-	c, ok := chans[name]
-	if ok == false {
-		return
+func NewChanBroker() *ChanBroker {
+	return &ChanBroker{
+		topics: map[string]chan ([]byte){},
 	}
-	delete(chans, name)
-	close(c)
 }
 
-//ChanQueue chan queue driver
+var DefaultChanBroker = NewChanBroker()
+
 type ChanQueue struct {
-	name     string
-	c        chan int
-	consumer func(*Message) ConsumerStatus
-	recover  func()
+	broker *ChanBroker
+	Name   string
+	TTL    time.Duration
 }
 
-//SetRecover set recover
-func (q *ChanQueue) SetRecover(r func()) {
-	q.recover = r
+func NewChanQueue() *ChanQueue {
+	return &ChanQueue{
+		broker: DefaultChanBroker,
+	}
 }
-
-//Connect to brocker as producer
-func (q *ChanQueue) Connect() error {
-	return nil
-}
-
-//Disconnect stop producing and disconnect
-func (q *ChanQueue) Disconnect() error {
-	return nil
-}
-
-// Listen listen queue
-//Return any error if raised
-func (q *ChanQueue) Listen() error {
-	var queue = getChanByName(q.name)
-	q.c = make(chan int)
+func (q *ChanQueue) Publish(bs []byte) error {
 	go func() {
-		for {
-			select {
-			case m := <-queue:
-				go q.consumer(m)
-			case <-q.c:
-				closeChanByName(q.name)
-				return
-			}
+		select {
+		case q.broker.getChanByName(q.Name) <- bs:
+			return
+		case <-time.After(q.TTL):
+			return
 		}
 	}()
 	return nil
 }
-
-//Close close queue
-//Return any error if raised
 func (q *ChanQueue) Close() error {
-	close(q.c)
 	return nil
 }
 
-// ProduceMessage produce messages to broke
-//Return any error if raised
-func (q *ChanQueue) ProduceMessage(message []byte) error {
-	var queue = getChanByName(q.name)
-	queue <- NewMessage(message)
-	return nil
+func (q *ChanQueue) Subscribe(h MessageHandler) (Unsubscriber, error) {
+	quitchan := make(chan int)
+	u := FuncUnsubscriber(func() error {
+		close(quitchan)
+		return nil
+	})
+	go func() {
+		for {
+			select {
+			case bs := <-q.broker.getChanByName(q.Name):
+				HandleMesage(h, NewMessage().WithData(bs))
+			case <-quitchan:
+				return
+			}
+		}
+	}()
+	return u, nil
 }
-
-//SetConsumer set message consumer
-func (q *ChanQueue) SetConsumer(c func(*Message) ConsumerStatus) {
-	q.consumer = c
-}
-
-//NewChanQueue create new chan queue
-func NewChanQueue() *ChanQueue {
-	return &ChanQueue{}
-}
-
-type ChanQueueConfig struct {
-	Name string
-}
-
-//ChanQueueFactory chan queue factory
-//Create driver with given loader
-func ChanQueueFactory(loader func(interface{}) error) (Driver, error) {
-	c := NewChanQueue()
-	conf := &ChanQueueConfig{}
-	err := loader(conf)
-	if err != nil {
-		return nil, err
-	}
-	c.name = conf.Name
-	return c, nil
-}
-
-func init() {
-	Register("chan", ChanQueueFactory)
+func (q *ChanQueue) NewPublisher() (Publisher, error) {
+	return q, nil
 }
